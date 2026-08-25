@@ -1,0 +1,51 @@
+<Page
+    x:Class="CRM_Alunos.Pages.DocumentosPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="Transparent">
+    
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="40,32">
+        <StackPanel MaxWidth="1200" HorizontalAlignment="Center">
+            <!-- Header -->
+            <TextBlock Text="Documentos" FontSize="32" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,8"/>
+            <TextBlock Text="Todos os documentos do sistema" FontSize="14" Foreground="#64748B" Margin="0,0,0,24"/>
+            
+            <!-- Search -->
+            <Border Background="White" CornerRadius="8" Padding="4" BorderThickness="1" BorderBrush="#E2E8F0" Margin="0,0,0,20">
+                <AutoSuggestBox x:Name="SearchBox" PlaceholderText="Pesquisar documentos..." QueryIcon="Find"
+                                TextChanged="SearchBox_TextChanged" Margin="8,4"/>
+            </Border>
+            
+            <!-- Documents Table -->
+            <Border Background="White" CornerRadius="12" BorderThickness="1" BorderBrush="#E2E8F0">
+                <Grid>
+                    <!-- Header -->
+                    <Grid Padding="20,12" Background="#F8FAFC">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="160"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="80"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Nome" FontWeight="SemiBold" Foreground="#475569" FontSize="13"/>
+                        <TextBlock Grid.Column="1" Text="Aluno" FontWeight="SemiBold" Foreground="#475569" FontSize="13"/>
+                        <TextBlock Grid.Column="2" Text="Tipo" FontWeight="SemiBold" Foreground="#475569" FontSize="13"/>
+                        <TextBlock Grid.Column="3" Text="Tamanho" FontWeight="SemiBold" Foreground="#475569" FontSize="13"/>
+                        <TextBlock Grid.Column="4" Text="Data Upload" FontWeight="SemiBold" Foreground="#475569" FontSize="13"/>
+                        <TextBlock Grid.Column="5" Text="" FontWeight="SemiBold" Foreground="#475569" FontSize="13"/>
+                    </Grid>
+                    
+                    <ListView x:Name="DocsListView" Grid.Row="1" SelectionMode="None" Background="Transparent"/>
+                    
+                    <!-- Empty state -->
+                    <StackPanel x:Name="EmptyState" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,40">
+                        <FontIcon Glyph="&#xE8A5;" FontSize="48" Foreground="#CBD5E1" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Nenhum documento encontrado" FontSize="16" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,12,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

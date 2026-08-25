@@ -1,0 +1,68 @@
+name: Build CRM Alunos
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "CRM-Alunos/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "CRM-Alunos/**"
+
+jobs:
+  build:
+    name: Build WinUI 3 Project
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore NuGet packages
+        run: dotnet restore CRM-Alunos/CRM-Alunos/CRM-Alunos.csproj
+        shell: pwsh
+
+      - name: Build CRM Alunos
+        run: dotnet build CRM-Alunos/CRM-Alunos/CRM-Alunos.csproj --no-restore -c Release
+        shell: pwsh
+
+      - name: Report build status
+        if: always()
+        shell: pwsh
+        run: |
+          $status = "${{ job.status }}"
+          $icon = if ($status -eq "success") { "✅" } else { "❌" }
+          $repo = "${{ github.repository }}"
+          $run_id = "${{ github.run_id }}"
+          $sha = "${{ github.sha }}"
+          $short_sha = $sha.Substring(0, 7)
+          $actor = "${{ github.actor }}"
+          $ref_name = "${{ github.ref_name }}"
+
+          $summary = @"
+          ## $icon Build CRM Alunos - $status
+
+          | Detail | Value |
+          |--------|-------|
+          | **Repository** | $repo |
+          | **Branch** | $ref_name |
+          | **Commit** | ``$short_sha`` |
+          | **Triggered by** | $actor |
+          | **Run ID** | [$run_id](https://github.com/$repo/actions/runs/$run_id) |
+
+          ### Build Information
+          - **Project**: CRM-Alunos/CRM-Alunos/CRM-Alunos.csproj
+          - **Framework**: net8.0-windows10.0.19041.0
+          - **Configuration**: Release
+          - **Target**: Windows App SDK 1.5.0 (WinUI 3)
+
+          $(if ($status -eq "success") { "The build completed successfully. All checks passed." } else { "The build failed. Please check the logs for details." })
+          "@
+
+          echo $summary >> $env:GITHUB_STEP_SUMMARY
