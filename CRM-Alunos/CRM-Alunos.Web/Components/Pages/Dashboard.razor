@@ -1,0 +1,76 @@
+@page "/"
+@using CRM_Alunos.Web.Data
+@using CRM_Alunos.Web.Models
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<AppDbContext> DbFactory
+
+<PageTitle>Dashboard - CRM Alunos</PageTitle>
+
+<div class="tw-page-header">
+    <h1 class="tw-page-title">Dashboard</h1>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
+    <div class="tw-card">
+        <div style="font-size: 12px; font-weight: 500; color: var(--twenty-text-tertiary); margin-bottom: 4px;">Total de Alunos</div>
+        <div style="font-size: 28px; font-weight: 600; color: var(--twenty-text-primary);">@totalAlunos</div>
+    </div>
+    <div class="tw-card">
+        <div style="font-size: 12px; font-weight: 500; color: var(--twenty-text-tertiary); margin-bottom: 4px;">Turmas Ativas</div>
+        <div style="font-size: 28px; font-weight: 600; color: var(--twenty-success);">@turmasAtivas</div>
+    </div>
+    <div class="tw-card">
+        <div style="font-size: 12px; font-weight: 500; color: var(--twenty-text-tertiary); margin-bottom: 4px;">Documentos</div>
+        <div style="font-size: 28px; font-weight: 600; color: var(--twenty-text-primary);">@totalDocumentos</div>
+    </div>
+</div>
+
+<div class="tw-card">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <h2 style="font-size: 14px; font-weight: 500; color: var(--twenty-text-primary);">Turmas Recentes</h2>
+        <a href="/turmas" class="tw-btn tw-btn-ghost" style="font-size: 12px;">Ver todas</a>
+    </div>
+    <div class="tw-table-container">
+        <table class="tw-table">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Período</th>
+                    <th>Sala</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var turma in turmas)
+                {
+                    <tr>
+                        <td style="font-weight: 500;">@turma.Nome</td>
+                        <td>@turma.Periodo</td>
+                        <td>@turma.Sala</td>
+                        <td>
+                            <span class="tw-badge @(turma.Status == "Ativa" ? "tw-badge-success" : "tw-badge-danger")">
+                                @turma.Status
+                            </span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private int totalAlunos;
+    private int turmasAtivas;
+    private int totalDocumentos;
+    private List<Turma> turmas = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        totalAlunos = await db.Alunos.CountAsync();
+        turmasAtivas = await db.Turmas.CountAsync(t => t.Status == "Ativa");
+        totalDocumentos = await db.Documentos.CountAsync();
+        turmas = await db.Turmas.OrderByDescending(t => t.DataCriacao).Take(5).ToListAsync();
+    }
+}

@@ -1,0 +1,112 @@
+@page "/configuracoes"
+@using CRM_Alunos.Web.Services
+@inject IDebugService DebugService
+@inject NavigationManager Navigation
+
+<PageTitle>Configurações - CRM Alunos</PageTitle>
+
+<div class="tw-page-header">
+    <h1 class="tw-page-title">Configurações</h1>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 16px;">
+    <div class="tw-card">
+        <h2 style="font-size: 14px; font-weight: 500; margin-bottom: 16px;">Sistema</h2>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--twenty-border);">
+                <span style="color: var(--twenty-text-tertiary); font-size: 13px;">Versão atual</span>
+                <span style="font-family: 'DM Mono', monospace; font-size: 13px; padding: 2px 8px; background: var(--twenty-bg-tertiary); border-radius: var(--twenty-radius-xs);">@currentVersion</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--twenty-border);">
+                <span style="color: var(--twenty-text-tertiary); font-size: 13px;">Plataforma</span>
+                <span style="font-size: 13px;">@(OperatingSystem.IsLinux() ? "Linux" : OperatingSystem.IsWindows() ? "Windows" : "Outro")</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--twenty-text-tertiary); font-size: 13px;">Banco de dados</span>
+                <span style="font-size: 13px;">SQLite</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="tw-card">
+        <h2 style="font-size: 14px; font-weight: 500; margin-bottom: 16px;">Atualizações</h2>
+        @if (checking)
+        {
+            <p style="color: var(--twenty-text-tertiary); font-size: 13px;">Verificando atualizações...</p>
+        }
+        else if (updateAvailable)
+        {
+            <div style="padding: 12px; background: rgba(0, 164, 51, 0.06); border: 1px solid rgba(0, 164, 51, 0.2); border-radius: var(--twenty-radius-sm); margin-bottom: 12px;">
+                <p style="color: var(--twenty-success); font-size: 13px; font-weight: 500; margin-bottom: 4px;">Nova versão disponível: @latestVersion</p>
+                <p style="color: var(--twenty-text-secondary); font-size: 12px; margin-bottom: 8px;">Visite o GitHub para baixar a versão mais recente.</p>
+                <a href="https://github.com/mineblox99los/CRM-Install/releases/latest" target="_blank" class="tw-btn tw-btn-primary" style="font-size: 12px; display: inline-flex;">
+                    Baixar atualização
+                </a>
+            </div>
+        }
+        else
+        {
+            <p style="color: var(--twenty-text-tertiary); font-size: 13px; margin-bottom: 12px;">Você está usando a versão mais recente.</p>
+        }
+        <button class="tw-btn tw-btn-secondary" @onclick="CheckForUpdate" disabled="@checking">
+            @(checking ? "Verificando..." : "Verificar atualizações")
+        </button>
+    </div>
+
+    <div class="tw-card">
+        <h2 style="font-size: 14px; font-weight: 500; margin-bottom: 16px;">Debug</h2>
+        <p style="color: var(--twenty-text-tertiary); font-size: 13px; margin-bottom: 12px;">Erros capturados: @errorCount</p>
+        @if (errorCount > 0)
+        {
+            <button class="tw-btn tw-btn-danger" @onclick="GoToDebug">
+                Ver erros
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    private string currentVersion = "1.0.0";
+    private bool checking;
+    private bool updateAvailable;
+    private string? latestVersion;
+    private int errorCount;
+
+    protected override void OnInitialized()
+    {
+        currentVersion = DebugService.GetVersion();
+        errorCount = DebugService.GetAllErrors().Count;
+    }
+
+    private async Task CheckForUpdate()
+    {
+        checking = true;
+        StateHasChanged();
+
+        try
+        {
+            using var http = new HttpClient();
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("CRM-Alunos");
+            var response = await http.GetAsync("https://api.github.com/repos/mineblox99los/CRM-Install/releases/latest");
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                var tagMatch = System.Text.RegularExpressions.Regex.Match(json, @"""tag_name""\s*:\s*""([^""]+)""");
+                if (tagMatch.Success)
+                {
+                    latestVersion = tagMatch.Groups[1].Value;
+                    updateAvailable = latestVersion != currentVersion;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            DebugService.CaptureError(ex, "Verificando atualização");
+        }
+
+        checking = false;
+        StateHasChanged();
+    }
+
+    private void GoToDebug() => Navigation.NavigateTo("/debug");
+}

@@ -1,0 +1,222 @@
+@page "/alunos"
+@using CRM_Alunos.Web.Data
+@using CRM_Alunos.Web.Models
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+@inject IDebugService DebugService
+
+<PageTitle>Alunos - CRM Alunos</PageTitle>
+
+<div class="tw-page-header">
+    <h1 class="tw-page-title">Alunos</h1>
+    <button class="tw-btn tw-btn-primary" @onclick="ShowForm">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Novo Aluno
+    </button>
+</div>
+
+<div class="tw-filter-bar">
+    <input @bind="searchText" @bind:event="oninput" @onkeyup="FilterAlunos" placeholder="Buscar por nome..." class="tw-input" style="flex: 1;" />
+    <select @bind="filterTurmaId" @bind:after="FilterAlunos" class="tw-input">
+        <option value="0">Todas as turmas</option>
+        @foreach (var t in turmas)
+        {
+            <option value="@t.Id">@t.Nome</option>
+        }
+    </select>
+</div>
+
+@if (showForm)
+{
+    <div class="tw-card" style="margin-bottom: 16px;">
+        <h2 style="font-size: 14px; font-weight: 500; margin-bottom: 16px;">@(editingAluno.Id > 0 ? "Editar Aluno" : "Novo Aluno")</h2>
+        <div class="tw-form-row">
+            <div class="tw-form-group">
+                <label class="tw-form-label">Nome *</label>
+                <input @bind="editingAluno.Nome" class="tw-input" style="width: 100%;" />
+            </div>
+            <div class="tw-form-group">
+                <label class="tw-form-label">CPF</label>
+                <input @bind="editingAluno.CPF" class="tw-input" style="width: 100%;" />
+            </div>
+            <div class="tw-form-group">
+                <label class="tw-form-label">Email</label>
+                <input @bind="editingAluno.Email" class="tw-input" style="width: 100%;" />
+            </div>
+            <div class="tw-form-group">
+                <label class="tw-form-label">Telefone</label>
+                <input @bind="editingAluno.Telefone" class="tw-input" style="width: 100%;" />
+            </div>
+            <div class="tw-form-group">
+                <label class="tw-form-label">Endereço</label>
+                <input @bind="editingAluno.Endereco" class="tw-input" style="width: 100%;" />
+            </div>
+            <div class="tw-form-group">
+                <label class="tw-form-label">Data de Nascimento</label>
+                <input @bind="editingAluno.DataNascimento" type="date" class="tw-input" style="width: 100%;" />
+            </div>
+            <div class="tw-form-group">
+                <label class="tw-form-label">Turma *</label>
+                <select @bind="editingAluno.TurmaId" class="tw-input" style="width: 100%;">
+                    <option value="0">Selecione a Turma</option>
+                    @foreach (var t in turmas)
+                    {
+                        <option value="@t.Id">@t.Nome</option>
+                    }
+                </select>
+            </div>
+            <div class="tw-form-group">
+                <label class="tw-form-label">Status</label>
+                <select @bind="editingAluno.Status" class="tw-input" style="width: 100%;">
+                    <option value="Ativo">Ativo</option>
+                    <option value="Inativo">Inativo</option>
+                    <option value="Formado">Formado</option>
+                </select>
+            </div>
+        </div>
+        <div class="tw-form-group" style="grid-column: span 2;">
+            <label class="tw-form-label">Observações</label>
+            <textarea @bind="editingAluno.Observacoes" class="tw-input" style="width: 100%; min-height: 60px; resize: vertical;"></textarea>
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 16px;">
+            <button class="tw-btn tw-btn-primary" @onclick="SaveAluno">Salvar</button>
+            <button class="tw-btn tw-btn-secondary" @onclick="CancelForm">Cancelar</button>
+        </div>
+    </div>
+}
+
+<div class="tw-table-container">
+    <table class="tw-table">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>CPF</th>
+                <th>Email</th>
+                <th>Turma</th>
+                <th>Status</th>
+                <th style="width: 100px;">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var aluno in filteredAlunos)
+            {
+                <tr @onclick="() => ViewAluno(aluno.Id)" style="cursor: pointer;">
+                    <td style="font-weight: 500;">@aluno.Nome</td>
+                    <td>@aluno.CPF</td>
+                    <td>@aluno.Email</td>
+                    <td>@aluno.Turma?.Nome</td>
+                    <td>
+                        <span class="tw-badge @(aluno.Status == "Ativo" ? "tw-badge-success" : aluno.Status == "Formado" ? "tw-badge-neutral" : "tw-badge-danger")">
+                            @aluno.Status
+                        </span>
+                    </td>
+                    <td @onclick:stopPropagation="true">
+                        <div style="display: flex; gap: 8px;">
+                            <button class="tw-btn tw-btn-ghost" @onclick="() => EditAluno(aluno)" style="padding: 4px 8px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            </button>
+                            <button class="tw-btn tw-btn-danger" @onclick="() => DeleteAluno(aluno.Id)" style="padding: 4px 8px;">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    @if (!filteredAlunos.Any())
+    {
+        <div class="tw-empty">
+            <svg class="tw-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <p>Nenhum aluno encontrado</p>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Aluno> alunos = new();
+    private List<Aluno> filteredAlunos = new();
+    private List<Turma> turmas = new();
+    private Aluno editingAluno = new();
+    private bool showForm;
+    private string searchText = "";
+    private int filterTurmaId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+            alunos = await db.Alunos.Include(a => a.Turma).OrderBy(a => a.Nome).ToListAsync();
+            turmas = await db.Turmas.Where(t => t.Status == "Ativa").OrderBy(t => t.Nome).ToListAsync();
+            FilterAlunos();
+        }
+        catch (Exception ex)
+        {
+            DebugService.CaptureError(ex, "Carregando alunos");
+            Navigation.NavigateTo("/debug");
+        }
+    }
+
+    private void FilterAlunos()
+    {
+        filteredAlunos = alunos.Where(a =>
+            (string.IsNullOrEmpty(searchText) || a.Nome.Contains(searchText, StringComparison.OrdinalIgnoreCase)) &&
+            (filterTurmaId == 0 || a.TurmaId == filterTurmaId)
+        ).ToList();
+    }
+
+    private void ShowForm()
+    {
+        editingAluno = new Aluno { DataMatricula = DateTime.Now, Status = "Ativo" };
+        showForm = true;
+    }
+
+    private void EditAluno(Aluno a) { editingAluno = a; showForm = true; }
+    private void CancelForm() { showForm = false; editingAluno = new(); }
+    private void ViewAluno(int id) => Navigation.NavigateTo($"/alunos/{id}");
+
+    private async Task SaveAluno()
+    {
+        try
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+            if (editingAluno.Id > 0)
+                db.Alunos.Update(editingAluno);
+            else
+                db.Alunos.Add(editingAluno);
+            await db.SaveChangesAsync();
+            showForm = false;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            DebugService.CaptureError(ex, "Salvando aluno");
+            Navigation.NavigateTo("/debug");
+        }
+    }
+
+    private async Task DeleteAluno(int id)
+    {
+        try
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+            var aluno = await db.Alunos.FindAsync(id);
+            if (aluno != null) { db.Alunos.Remove(aluno); await db.SaveChangesAsync(); await LoadData(); }
+        }
+        catch (Exception ex)
+        {
+            DebugService.CaptureError(ex, "Excluindo aluno");
+            Navigation.NavigateTo("/debug");
+        }
+    }
+}

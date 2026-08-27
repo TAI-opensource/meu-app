@@ -1,0 +1,123 @@
+﻿@inherits LayoutComponentBase
+@inject NavigationManager Navigation
+@inject IDebugService DebugService
+
+<div class="tw-sidebar">
+    <div class="tw-sidebar-header">
+        <div class="tw-sidebar-logo">C</div>
+        <span class="tw-sidebar-title">CRM Alunos</span>
+    </div>
+
+    <div class="tw-sidebar-section">
+        <div class="tw-sidebar-section-title">Menu</div>
+        <NavLink href="/" class="tw-sidebar-item" Match="NavLinkMatch.All">
+            <svg class="tw-sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" rx="1"/>
+                <rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="3" y="14" width="7" height="7" rx="1"/>
+                <rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+            Dashboard
+        </NavLink>
+        <NavLink href="/turmas" class="tw-sidebar-item">
+            <svg class="tw-sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            Turmas
+        </NavLink>
+        <NavLink href="/alunos" class="tw-sidebar-item">
+            <svg class="tw-sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+            </svg>
+            Alunos
+        </NavLink>
+        <NavLink href="/documentos" class="tw-sidebar-item">
+            <svg class="tw-sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+            </svg>
+            Documentos
+        </NavLink>
+    </div>
+
+    <div class="tw-sidebar-section" style="margin-top: auto;">
+        <NavLink href="/configuracoes" class="tw-sidebar-item">
+            <svg class="tw-sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            Configurações
+        </NavLink>
+        <a href="/debug" class="tw-sidebar-item">
+            <svg class="tw-sidebar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="4 17 10 11 4 5"/>
+                <line x1="12" y1="19" x2="20" y2="19"/>
+            </svg>
+            Debug
+        </a>
+    </div>
+</div>
+
+<div class="tw-main">
+    <div class="tw-topbar">
+        <div class="tw-topbar-title">
+            @GetPageTitle()
+        </div>
+        <div class="tw-topbar-actions">
+            <span style="font-size: 12px; color: var(--twenty-text-tertiary);">v1.0</span>
+        </div>
+    </div>
+
+    <div class="tw-content">
+        <ErrorBoundary @ref="errorBoundary">
+            <ChildContent>
+                @Body
+            </ChildContent>
+            <ErrorContent>
+                @{ var ex = context; }
+                @{ DebugService.CaptureError(ex, "UI Component"); }
+                <div class="tw-empty">
+                    <p style="font-size: 16px; font-weight: 500; margin-bottom: 8px;">Algo deu errado</p>
+                    <p style="margin-bottom: 16px;">@ex.Message</p>
+                    <button class="tw-btn tw-btn-secondary" @onclick="() => NavigateToDebug(ex)">
+                        Ver detalhes do erro
+                    </button>
+                </div>
+            </ErrorContent>
+        </ErrorBoundary>
+    </div>
+</div>
+
+@code {
+    private ErrorBoundary? errorBoundary;
+
+    protected override void OnInitialized()
+    {
+        errorBoundary = new ErrorBoundary();
+    }
+
+    private string GetPageTitle()
+    {
+        var uri = Navigation.Uri;
+        if (uri.EndsWith("/")) return "Dashboard";
+        if (uri.Contains("/turmas")) return "Turmas";
+        if (uri.Contains("/alunos")) return "Alunos";
+        if (uri.Contains("/documentos")) return "Documentos";
+        if (uri.Contains("/configuracoes")) return "Configurações";
+        if (uri.Contains("/debug")) return "Debug";
+        return "CRM Alunos";
+    }
+
+    private void NavigateToDebug(Exception ex)
+    {
+        DebugService.CaptureError(ex, "UI Component");
+        Navigation.NavigateTo("/debug");
+    }
+}

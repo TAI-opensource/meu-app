@@ -1,0 +1,135 @@
+@page "/alunos/{Id:int}"
+@using CRM_Alunos.Web.Data
+@using CRM_Alunos.Web.Models
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager Navigation
+@inject IDebugService DebugService
+
+<PageTitle>@(aluno?.Nome ?? "Aluno") - CRM Alunos</PageTitle>
+
+@if (aluno == null)
+{
+    <p style="color: var(--twenty-text-tertiary);">Carregando...</p>
+    return;
+}
+
+<div style="margin-bottom: 16px;">
+    <button class="tw-btn tw-btn-ghost" @onclick="GoBack" style="margin-bottom: 8px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+        Voltar
+    </button>
+</div>
+
+<div class="tw-page-header">
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <h1 class="tw-page-title">@aluno.Nome</h1>
+        <span class="tw-badge @(aluno.Status == "Ativo" ? "tw-badge-success" : "tw-badge-danger")">@aluno.Status</span>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+    <div class="tw-card">
+        <h2 style="font-size: 14px; font-weight: 500; margin-bottom: 16px;">Dados Pessoais</h2>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--twenty-border);">
+                <span style="color: var(--twenty-text-tertiary); font-size: 13px;">CPF</span>
+                <span style="font-size: 13px;">@(aluno.CPF ?? "-")</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--twenty-border);">
+                <span style="color: var(--twenty-text-tertiary); font-size: 13px;">Email</span>
+                <span style="font-size: 13px;">@(aluno.Email ?? "-")</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--twenty-border);">
+                <span style="color: var(--twenty-text-tertiary); font-size: 13px;">Telefone</span>
+                <span style="font-size: 13px;">@(aluno.Telefone ?? "-")</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--twenty-border);">
+                <span style="color: var(--twenty-text-tertiary); font-size: 13px;">Endereço</span>
+                <span style="font-size: 13px;">@(aluno.Endereco ?? "-")</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--twenty-border);">
+                <span style="color: var(--twenty-text-tertiary); font-size: 13px;">Data Nascimento</span>
+                <span style="font-size: 13px;">@(aluno.DataNascimento?.ToString("dd/MM/yyyy") ?? "-")</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--twenty-border);">
+                <span style="color: var(--twenty-text-tertiary); font-size: 13px;">Data Matrícula</span>
+                <span style="font-size: 13px;">@aluno.DataMatricula.ToString("dd/MM/yyyy")</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--twenty-text-tertiary); font-size: 13px;">Turma</span>
+                <span style="font-size: 13px;">@aluno.Turma?.Nome</span>
+            </div>
+        </div>
+        @if (!string.IsNullOrEmpty(aluno.Observacoes))
+        {
+            <div style="margin-top: 16px; padding: 12px; background: var(--twenty-bg-secondary); border-radius: var(--twenty-radius-sm);">
+                <div style="font-size: 12px; color: var(--twenty-text-tertiary); margin-bottom: 4px;">Observações</div>
+                <p style="font-size: 13px;">@aluno.Observacoes</p>
+            </div>
+        }
+    </div>
+
+    <div class="tw-card">
+        <h2 style="font-size: 14px; font-weight: 500; margin-bottom: 16px;">Documentos</h2>
+        @if (aluno.Documentos.Any())
+        {
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                @foreach (var doc in aluno.Documentos)
+                {
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--twenty-bg-secondary); border-radius: var(--twenty-radius-sm);">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 13px; font-weight: 500;">@doc.Nome</span>
+                            <span class="tw-badge tw-badge-neutral" style="font-size: 11px;">@doc.Tipo</span>
+                        </div>
+                        <span style="font-size: 12px; color: var(--twenty-text-tertiary);">@FormatSize(doc.Tamanho)</span>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="tw-empty">
+                <p>Nenhum documento</p>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Aluno? aluno;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+            aluno = await db.Alunos
+                .Include(a => a.Turma)
+                .Include(a => a.Documentos)
+                .FirstOrDefaultAsync(a => a.Id == Id);
+
+            if (aluno == null)
+            {
+                DebugService.CaptureError("NotFound", $"Aluno {Id} nao encontrado");
+                Navigation.NavigateTo("/debug");
+            }
+        }
+        catch (Exception ex)
+        {
+            DebugService.CaptureError(ex, $"Carregando aluno {Id}");
+            Navigation.NavigateTo("/debug");
+        }
+    }
+
+    private void GoBack() => Navigation.NavigateTo("/alunos");
+
+    private string FormatSize(long bytes)
+    {
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1048576) return (bytes / 1024.0).ToString("F1") + " KB";
+        return (bytes / 1048576.0).ToString("F1") + " MB";
+    }
+}
