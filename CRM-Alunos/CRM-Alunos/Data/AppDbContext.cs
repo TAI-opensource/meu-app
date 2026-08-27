@@ -10,16 +10,12 @@ public class AppDbContext : DbContext
     public DbSet<Documento> Documentos { get; set; } = null!;
     public DbSet<Pasta> Pastas { get; set; } = null!;
 
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+    public AppDbContext()
     {
     }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
-        if (!optionsBuilder.IsConfigured)
-        {
-            optionsBuilder.UseSqlite("Data Source=crm_alunos.db");
-        }
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -32,6 +28,10 @@ public class AppDbContext : DbContext
                 Id = 1,
                 Nome = "Turma A",
                 Descricao = "Primeira turma do ano letivo",
+                Periodo = "Manha",
+                Horario = "08:00 - 12:00",
+                Sala = "Sala 101",
+                Status = "Ativa",
                 DataCriacao = new DateTime(2024, 1, 15),
                 AnoLetivo = 2024,
                 Serie = "1 serie"
@@ -41,6 +41,10 @@ public class AppDbContext : DbContext
                 Id = 2,
                 Nome = "Turma B",
                 Descricao = "Segunda turma do ano letivo",
+                Periodo = "Tarde",
+                Horario = "13:00 - 17:00",
+                Sala = "Sala 202",
+                Status = "Ativa",
                 DataCriacao = new DateTime(2024, 1, 15),
                 AnoLetivo = 2024,
                 Serie = "2 serie"
@@ -51,7 +55,7 @@ public class AppDbContext : DbContext
             new Aluno
             {
                 Id = 1,
-                NomeCompleto = "Joao Silva",
+                Nome = "Joao Silva",
                 CPF = "123.456.789-00",
                 DataNascimento = new DateTime(2005, 3, 10),
                 Email = "joao.silva@email.com",
@@ -59,13 +63,13 @@ public class AppDbContext : DbContext
                 Endereco = "Rua A, 123",
                 Observacoes = "Aluno destacado em matematica",
                 DataMatricula = new DateTime(2024, 2, 1),
-                Ativo = true,
+                Status = "Ativo",
                 TurmaId = 1
             },
             new Aluno
             {
                 Id = 2,
-                NomeCompleto = "Maria Santos",
+                Nome = "Maria Santos",
                 CPF = "987.654.321-00",
                 DataNascimento = new DateTime(2005, 7, 22),
                 Email = "maria.santos@email.com",
@@ -73,13 +77,13 @@ public class AppDbContext : DbContext
                 Endereco = "Rua B, 456",
                 Observacoes = "Monitora da turma",
                 DataMatricula = new DateTime(2024, 2, 1),
-                Ativo = true,
+                Status = "Ativo",
                 TurmaId = 1
             },
             new Aluno
             {
                 Id = 3,
-                NomeCompleto = "Pedro Oliveira",
+                Nome = "Pedro Oliveira",
                 CPF = "456.789.123-00",
                 DataNascimento = new DateTime(2004, 11, 5),
                 Email = "pedro.oliveira@email.com",
@@ -87,13 +91,13 @@ public class AppDbContext : DbContext
                 Endereco = "Rua C, 789",
                 Observacoes = "Interessado em programacao",
                 DataMatricula = new DateTime(2024, 2, 1),
-                Ativo = true,
+                Status = "Ativo",
                 TurmaId = 2
             },
             new Aluno
             {
                 Id = 4,
-                NomeCompleto = "Ana Costa",
+                Nome = "Ana Costa",
                 CPF = "321.654.987-00",
                 DataNascimento = new DateTime(2005, 1, 18),
                 Email = "ana.costa@email.com",
@@ -101,9 +105,10 @@ public class AppDbContext : DbContext
                 Endereco = "Rua D, 101",
                 Observacoes = "Participa do projeto de ciencias",
                 DataMatricula = new DateTime(2024, 2, 1),
-                Ativo = true,
+                Status = "Ativo",
                 TurmaId = 2
             }
         );
     }
 }
+

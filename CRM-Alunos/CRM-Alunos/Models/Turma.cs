@@ -11,6 +11,14 @@ public class Turma
 
     public string? Descricao { get; set; }
 
+    public string? Periodo { get; set; }
+
+    public string? Horario { get; set; }
+
+    public string? Sala { get; set; }
+
+    public string? Status { get; set; } = "Ativa";
+
     public DateTime DataCriacao { get; set; } = DateTime.Now;
 
     public int AnoLetivo { get; set; }

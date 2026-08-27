@@ -15,9 +15,9 @@ public class Documento
     [Required]
     public string CaminhoArquivo { get; set; } = string.Empty;
 
-    public string? TipoArquivo { get; set; }
+    public string? Tipo { get; set; }
 
-    public long TamanhoArquivo { get; set; }
+    public long Tamanho { get; set; }
 
     public DateTime DataUpload { get; set; } = DateTime.Now;
 

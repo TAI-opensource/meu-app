@@ -1,0 +1,10 @@
+# Code Owners - CRM Alunos
+
+# Default owner for everything
+* @mineblox99los
+
+# Security policy
+SECURITY.md @mineblox99los
+
+# CI/CD workflows
+.github/ @mineblox99los

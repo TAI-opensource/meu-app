@@ -1,0 +1,49 @@
+version: 2
+updates:
+  - package-ecosystem: "nuget"
+    directory: "/CRM-Alunos"
+    schedule:
+      interval: "daily"
+      time: "06:00"
+      timezone: "America/Sao_Paulo"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "mineblox99los"
+    labels:
+      - "dependencies"
+      - "automated"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    groups:
+      entity-framework:
+        patterns:
+          - "Microsoft.EntityFrameworkCore*"
+      npgsql:
+        patterns:
+          - "Npgsql*"
+      community-toolkit:
+        patterns:
+          - "CommunityToolkit*"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      time: "06:00"
+      timezone: "America/Sao_Paulo"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "mineblox99los"
+    labels:
+      - "ci"
+      - "automated"
+    commit-message:
+      prefix: "ci"
+    groups:
+      actions:
+        patterns:
+          - "*"

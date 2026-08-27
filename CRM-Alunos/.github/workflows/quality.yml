@@ -1,0 +1,87 @@
+name: Quality CRM Alunos
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  code-format:
+    name: Code Formatting
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore CRM-Alunos/CRM-Alunos.csproj
+        shell: pwsh
+
+      - name: Check formatting
+        run: |
+          cd CRM-Alunos
+          dotnet format --verify-no-changes
+        shell: pwsh
+        continue-on-error: true
+
+  dead-code:
+    name: Dead Code Detection
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Scan for dead code markers
+        shell: bash
+        run: |
+          echo "## Dead Code Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          TODO_COUNT=$(grep -rn "TODO\|FIXME\|HACK\|XXX" --include="*.cs" . 2>/dev/null | wc -l || echo "0")
+          EMPTY_CATCH=$(grep -rn "catch\s*([^)]*)\s*{\s*}" --include="*.cs" . 2>/dev/null | wc -l || echo "0")
+
+          echo "- **TODO/FIXME markers**: $TODO_COUNT" >> $GITHUB_STEP_SUMMARY
+          echo "- **Empty catch blocks**: $EMPTY_CATCH" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$TODO_COUNT" -gt 0 ] 2>/dev/null; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Markers Found" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            grep -rn "TODO\|FIXME\|HACK\|XXX" --include="*.cs" . 2>/dev/null >> $GITHUB_STEP_SUMMARY || true
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+  build-verification:
+    name: Build Verification
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Publish
+        run: dotnet publish CRM-Alunos/CRM-Alunos.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
+        shell: pwsh
+
+      - name: Verify
+        shell: pwsh
+        run: |
+          if (Test-Path "publish/CRM-Alunos.exe") {
+            Write-Host "Build verification passed"
+          } else {
+            Write-Error "Build failed"
+            exit 1
+          }

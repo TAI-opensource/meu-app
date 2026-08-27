@@ -12,7 +12,7 @@ on:
 
 jobs:
   build:
-    name: Build WinUI 3 Project
+    name: Build WPF Project
     runs-on: windows-latest
 
     steps:
@@ -31,6 +31,25 @@ jobs:
       - name: Build CRM Alunos
         run: dotnet build CRM-Alunos/CRM-Alunos/CRM-Alunos.csproj --no-restore -c Release
         shell: pwsh
+
+      - name: Verify build output
+        shell: pwsh
+        run: |
+          $outputDir = "CRM-Alunos/CRM-Alunos/bin/Release/net8.0-windows"
+          $exePath = "$outputDir/CRM-Alunos.exe"
+
+          if (Test-Path $exePath) {
+            $fileInfo = Get-Item $exePath
+            $sizeMB = [math]::Round($fileInfo.Length / 1MB, 2)
+            Write-Host "Build output verified: $exePath ($sizeMB MB)"
+            echo "## Build Output Verified" >> $env:GITHUB_STEP_SUMMARY
+            echo "- **Executable**: CRM-Alunos.exe" >> $env:GITHUB_STEP_SUMMARY
+            echo "- **Size**: $sizeMB MB" >> $env:GITHUB_STEP_SUMMARY
+            echo "- **Location**: $outputDir" >> $env:GITHUB_STEP_SUMMARY
+          } else {
+            Write-Error "Build output not found at $exePath"
+            exit 1
+          }
 
       - name: Report build status
         if: always()
@@ -58,9 +77,9 @@ jobs:
 
           ### Build Information
           - **Project**: CRM-Alunos/CRM-Alunos/CRM-Alunos.csproj
-          - **Framework**: net8.0-windows10.0.19041.0
+          - **Framework**: net8.0-windows
           - **Configuration**: Release
-          - **Target**: Windows App SDK 1.5.0 (WinUI 3)
+          - **Target**: WPF (.NET 8)
 
           $(if ($status -eq "success") { "The build completed successfully. All checks passed." } else { "The build failed. Please check the logs for details." })
           "@

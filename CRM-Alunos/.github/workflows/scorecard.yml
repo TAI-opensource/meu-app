@@ -1,0 +1,104 @@
+name: Scorecard Security
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 5 * * 1"
+
+permissions:
+  security-events: write
+  contents: read
+  actions: read
+
+jobs:
+  analysis:
+    name: Scorecard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run Scorecard
+        uses: ossf/scorecard-action@v2.4.0
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: false
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: results.sarif
+
+  policy-check:
+    name: Security Policy Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify security files
+        run: |
+          echo "## Security Policy Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          CHECKS_PASSED=0
+          CHECKS_FAILED=0
+
+          # Check SECURITY.md
+          if [ -f "SECURITY.md" ]; then
+            echo "- [x] SECURITY.md exists" >> $GITHUB_STEP_SUMMARY
+            CHECKS_PASSED=$((CHECKS_PASSED + 1))
+          else
+            echo "- [ ] SECURITY.md missing" >> $GITHUB_STEP_SUMMARY
+            CHECKS_FAILED=$((CHECKS_FAILED + 1))
+          fi
+
+          # Check CONTRIBUTING.md
+          if [ -f "CONTRIBUTING.md" ]; then
+            echo "- [x] CONTRIBUTING.md exists" >> $GITHUB_STEP_SUMMARY
+            CHECKS_PASSED=$((CHECKS_PASSED + 1))
+          else
+            echo "- [ ] CONTRIBUTING.md missing" >> $GITHUB_STEP_SUMMARY
+            CHECKS_FAILED=$((CHECKS_FAILED + 1))
+          fi
+
+          # Check LICENSE
+          if [ -f "LICENSE" ]; then
+            echo "- [x] LICENSE exists" >> $GITHUB_STEP_SUMMARY
+            CHECKS_PASSED=$((CHECKS_PASSED + 1))
+          else
+            echo "- [ ] LICENSE missing" >> $GITHUB_STEP_SUMMARY
+            CHECKS_FAILED=$((CHECKS_FAILED + 1))
+          fi
+
+          # Check CODEOWNERS
+          if [ -f ".github/CODEOWNERS" ]; then
+            echo "- [x] CODEOWNERS exists" >> $GITHUB_STEP_SUMMARY
+            CHECKS_PASSED=$((CHECKS_PASSED + 1))
+          else
+            echo "- [ ] CODEOWNERS missing" >> $GITHUB_STEP_SUMMARY
+            CHECKS_FAILED=$((CHECKS_FAILED + 1))
+          fi
+
+          # Check dependabot
+          if [ -f ".github/dependabot.yml" ]; then
+            echo "- [x] Dependabot configured" >> $GITHUB_STEP_SUMMARY
+            CHECKS_PASSED=$((CHECKS_PASSED + 1))
+          else
+            echo "- [ ] Dependabot not configured" >> $GITHUB_STEP_SUMMARY
+            CHECKS_FAILED=$((CHECKS_FAILED + 1))
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Result**: $CHECKS_PASSED passed, $CHECKS_FAILED failed" >> $GITHUB_STEP_SUMMARY
+
+          if [ $CHECKS_FAILED -gt 0 ]; then
+            exit 1
+          fi

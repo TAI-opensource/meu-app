@@ -8,7 +8,7 @@ public class Aluno
     public int Id { get; set; }
 
     [Required]
-    public string NomeCompleto { get; set; } = string.Empty;
+    public string Nome { get; set; } = string.Empty;
 
     public string? CPF { get; set; }
 
@@ -26,7 +26,7 @@ public class Aluno
 
     public DateTime DataMatricula { get; set; } = DateTime.Now;
 
-    public bool Ativo { get; set; } = true;
+    public string? Status { get; set; } = "Ativo";
 
     [ForeignKey(nameof(Turma))]
     public int TurmaId { get; set; }

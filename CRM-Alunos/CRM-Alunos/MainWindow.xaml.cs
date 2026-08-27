@@ -1,71 +1,88 @@
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 using CRM_Alunos.Pages;
-using System;
-using Windows.UI;
 
 namespace CRM_Alunos
 {
-    public sealed partial class MainWindow : Window
+    public partial class MainWindow : Window
     {
+        private Button[] _navButtons;
+
         public MainWindow()
         {
-            this.InitializeComponent();
-            this.Title = "CRM Alunos - Gestão de Turmas";
+            InitializeComponent();
 
-            ContentFrame.Navigate(typeof(DashboardPage));
-            NavListView.SelectedIndex = 0;
+            _navButtons = new[] { BtnDashboard, BtnTurmas, BtnAlunos, BtnDocumentos, BtnConfiguracoes };
 
-            UpdateNavColors();
+            NavigateTo("Dashboard");
         }
 
-        private void NavListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void BtnDashboard_Click(object sender, RoutedEventArgs e) => NavigateTo("Dashboard");
+        private void BtnTurmas_Click(object sender, RoutedEventArgs e) => NavigateTo("Turmas");
+        private void BtnAlunos_Click(object sender, RoutedEventArgs e) => NavigateTo("Alunos");
+        private void BtnDocumentos_Click(object sender, RoutedEventArgs e) => NavigateTo("Documentos");
+        private void BtnConfiguracoes_Click(object sender, RoutedEventArgs e) => NavigateTo("Configuracoes");
+
+        public void NavigateTo(string tag)
         {
-            if (NavListView.SelectedItem is ListViewItem item)
+            UserControl page = tag switch
             {
-                string tag = item.Tag?.ToString() ?? "";
-                Type pageType = tag switch
-                {
-                    "Dashboard" => typeof(DashboardPage),
-                    "Turmas" => typeof(TurmasPage),
-                    "Alunos" => typeof(AlunosPage),
-                    "Documentos" => typeof(DocumentosPage),
-                    _ => typeof(DashboardPage)
-                };
+                "Dashboard" => new DashboardPage(),
+                "Turmas" => new TurmasPage(),
+                "Alunos" => new AlunosPage(),
+                "Documentos" => new DocumentosPage(),
+                "Configuracoes" => new ConfiguracoesPage(),
+                _ => null
+            };
 
-                if (ContentFrame.CurrentSourcePageType != pageType)
-                {
-                    ContentFrame.Navigate(pageType);
-                }
-
-                UpdateNavColors();
+            if (page != null)
+            {
+                ContentFrame.Content = page;
             }
+
+            UpdateActiveButton(tag);
         }
 
-        private void UpdateNavColors()
+        public void NavigateTo(UserControl page)
         {
-            var allItems = new[] { NavDashboard, NavTurmas, NavAlunos, NavDocumentos };
+            ContentFrame.Content = page;
 
-            for (int i = 0; i < allItems.Length; i++)
+            string tag = page switch
             {
-                bool isSelected = NavListView.SelectedIndex == i;
-                allItems[i].Background = isSelected
-                    ? new SolidColorBrush(Color.FromArgb(40, 129, 140, 248))
-                    : new SolidColorBrush(Colors.Transparent);
+                DashboardPage => "Dashboard",
+                TurmasPage => "Turmas",
+                AlunosPage => "Alunos",
+                DocumentosPage => "Documentos",
+                AlunoDetailPage => "Alunos",
+                ConfiguracoesPage => "Configuracoes",
+                _ => ""
+            };
 
-                if (allItems[i].Content is StackPanel sp && sp.Children.Count > 1)
+            UpdateActiveButton(tag);
+        }
+
+        private void UpdateActiveButton(string activeTag)
+        {
+            var activeBrush = new SolidColorBrush(Color.FromArgb(40, 129, 140, 248));
+            var inactiveBrush = new SolidColorBrush(Colors.Transparent);
+            var activeForeground = new SolidColorBrush(Colors.White);
+            var inactiveForeground = new SolidColorBrush(Color.FromArgb(255, 203, 213, 225));
+            var activeIconForeground = new SolidColorBrush(Color.FromArgb(255, 129, 140, 248));
+            var inactiveIconForeground = new SolidColorBrush(Color.FromArgb(255, 148, 163, 184));
+
+            foreach (var btn in _navButtons)
+            {
+                bool isActive = btn.Tag?.ToString() == activeTag;
+                btn.Background = isActive ? activeBrush : inactiveBrush;
+
+                if (btn.Content is StackPanel sp && sp.Children.Count >= 2)
                 {
-                    if (sp.Children[0] is FontIcon icon)
-                        icon.Foreground = isSelected
-                            ? new SolidColorBrush(Color.FromArgb(255, 129, 140, 248))
-                            : new SolidColorBrush(Color.FromArgb(255, 148, 163, 184));
+                    if (sp.Children[0] is System.Windows.Controls.TextBlock icon)
+                        icon.Foreground = isActive ? activeIconForeground : inactiveIconForeground;
 
-                    if (sp.Children[1] is TextBlock text)
-                        text.Foreground = isSelected
-                            ? new SolidColorBrush(Colors.White)
-                            : new SolidColorBrush(Color.FromArgb(255, 203, 213, 225));
+                    if (sp.Children[1] is System.Windows.Controls.TextBlock text)
+                        text.Foreground = isActive ? activeForeground : inactiveForeground;
                 }
             }
         }

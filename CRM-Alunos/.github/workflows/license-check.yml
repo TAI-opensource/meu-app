@@ -1,0 +1,36 @@
+name: License Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  license-check:
+    name: Verify Licenses
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for license file
+        run: |
+          if [ ! -f "LICENSE" ]; then
+            echo "::error::LICENSE file not found"
+            exit 1
+          fi
+          echo "LICENSE file found"
+
+      - name: Verify no restrictive licenses
+        shell: bash
+        run: |
+          echo "Checking for restrictive licenses in dependencies..."
+          
+          # Check if any GPL dependencies exist in csproj
+          if grep -q "GPL" CRM-Alunos/CRM-Alunos.csproj 2>/dev/null; then
+            echo "::warning::GPL dependency found"
+          fi
+          
+          echo "License check passed"

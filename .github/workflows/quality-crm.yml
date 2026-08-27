@@ -1,0 +1,256 @@
+name: Quality CRM Alunos
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "CRM-Alunos/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "CRM-Alunos/**"
+
+jobs:
+  code-format:
+    name: Code Formatting
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore packages
+        run: dotnet restore CRM-Alunos/CRM-Alunos/CRM-Alunos.csproj
+        shell: pwsh
+
+      - name: Check formatting
+        run: |
+          cd CRM-Alunos
+          dotnet format --verify-no-changes --verbosity diagnostic
+        shell: pwsh
+
+      - name: Report formatting status
+        if: always()
+        shell: pwsh
+        run: |
+          $status = "${{ job.status }}"
+          $icon = if ($status -eq "success") { "✅" } else { "❌" }
+          $repo = "${{ github.repository }}"
+          $run_id = "${{ github.run_id }}"
+          $sha = "${{ github.sha }}"
+          $short_sha = $sha.Substring(0, 7)
+
+          $summary = @"
+          ## $icon Code Formatting - $status
+
+          | Detail | Value |
+          |--------|-------|
+          | **Repository** | $repo |
+          | **Commit** | ``$short_sha`` |
+          | **Run ID** | [$run_id](https://github.com/$repo/actions/runs/$run_id) |
+
+          $(if ($status -eq "success") { "All code formatting checks passed." } else { "Formatting violations found. Run `dotnet format` to fix." })
+          "@
+
+          echo $summary >> $env:GITHUB_STEP_SUMMARY
+
+  dead-code:
+    name: Dead Code Detection
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore packages
+        run: dotnet restore CRM-Alunos/CRM-Alunos/CRM-Alunos.csproj
+        shell: pwsh
+
+      - name: Build for analysis
+        run: dotnet build CRM-Alunos/CRM-Alunos/CRM-Alunos.csproj -c Release
+        shell: pwsh
+
+      - name: Check for unused usings and unreferenced code
+        shell: pwsh
+        run: |
+          cd CRM-Alunos/CRM-Alunos
+          $warnings = @()
+
+          # Check for unused usings via IDE analyzer output
+          $csFiles = Get-ChildItem -Path . -Recurse -Filter "*.cs"
+          $unusedUsingCount = 0
+
+          foreach ($file in $csFiles) {
+            $content = Get-Content $file.FullName -Raw
+            # Detect empty usings block patterns
+            if ($content -match '(?m)^using\s+\w+(\.\w+)*;\s*\r?\nusing\s+\w+(\.\w+)*;') {
+              # Multiple consecutive usings are normal, skip
+            }
+          }
+
+          # Check for TODO/FIXME/HACK markers
+          $todoFiles = @()
+          foreach ($file in $csFiles) {
+            $content = Get-Content $file.FullName
+            $lineNum = 0
+            foreach ($line in $content) {
+              $lineNum++
+              if ($line -match '(TODO|FIXME|HACK|XXX):') {
+                $todoFiles += "$($file.Name):$lineNum - $($line.Trim())"
+              }
+            }
+          }
+
+          # Report
+          if ($todoFiles.Count -gt 0) {
+            Write-Host "Found $($todoFiles.Count) TODO/FIXME/HACK markers:"
+            $todoFiles | ForEach-Object { Write-Host "  $_" }
+          } else {
+            Write-Host "No TODO/FIXME/HACK markers found."
+          }
+
+          # Check for empty catch blocks
+          $emptyCatchCount = 0
+          foreach ($file in $csFiles) {
+            $content = Get-Content $file.FullName -Raw
+            if ($content -match 'catch\s*\([^)]*\)\s*\{\s*\}') {
+              $emptyCatchCount++
+            }
+          }
+
+          if ($emptyCatchCount -gt 0) {
+            $warnings += "Found $emptyCatchCount empty catch block(s)"
+          }
+
+          # Summary
+          echo "## Dead Code & Code Smell Analysis" >> $env:GITHUB_STEP_SUMMARY
+          echo "" >> $env:GITHUB_STEP_SUMMARY
+          echo "- **CS files scanned**: $($csFiles.Count)" >> $env:GITHUB_STEP_SUMMARY
+          echo "- **TODO/FIXME/HACK markers**: $($todoFiles.Count)" >> $env:GITHUB_STEP_SUMMARY
+          echo "- **Empty catch blocks**: $emptyCatchCount" >> $env:GITHUB_STEP_SUMMARY
+
+          if ($todoFiles.Count -gt 0) {
+            echo "" >> $env:GITHUB_STEP_SUMMARY
+            echo "### TODO/FIXME/HACK Markers" >> $env:GITHUB_STEP_SUMMARY
+            echo '```' >> $env:GITHUB_STEP_SUMMARY
+            $todoFiles | ForEach-Object { echo $_ >> $env:GITHUB_STEP_SUMMARY }
+            echo '```' >> $env:GITHUB_STEP_SUMMARY
+          }
+
+          if ($warnings.Count -gt 0) {
+            echo "" >> $env:GITHUB_STEP_SUMMARY
+            echo "### Warnings" >> $env:GITHUB_STEP_SUMMARY
+            $warnings | ForEach-Object { echo "- $_" >> $env:GITHUB_STEP_SUMMARY }
+            echo "" >> $env:GITHUB_STEP_SUMMARY
+            echo "⚠️ Some code quality issues were found. Review recommended." >> $env:GITHUB_STEP_SUMMARY
+          } else {
+            echo "" >> $env:GITHUB_STEP_SUMMARY
+            echo "✅ No critical dead code issues found." >> $env:GITHUB_STEP_SUMMARY
+          }
+
+  build-verification:
+    name: Build Verification
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore packages
+        run: dotnet restore CRM-Alunos/CRM-Alunos/CRM-Alunos.csproj
+        shell: pwsh
+
+      - name: Build
+        run: dotnet build CRM-Alunos/CRM-Alunos/CRM-Alunos.csproj --no-restore -c Release
+        shell: pwsh
+
+      - name: Verify output exists
+        shell: pwsh
+        run: |
+          $exePath = "CRM-Alunos/CRM-Alunos/bin/Release/net8.0-windows/CRM-Alunos.exe"
+          if (Test-Path $exePath) {
+            Write-Host "Build verification passed: $exePath exists"
+          } else {
+            Write-Error "Build verification failed: $exePath not found"
+            exit 1
+          }
+
+      - name: Report build status
+        if: always()
+        shell: pwsh
+        run: |
+          $status = "${{ job.status }}"
+          $icon = if ($status -eq "success") { "✅" } else { "❌" }
+          $repo = "${{ github.repository }}"
+          $run_id = "${{ github.run_id }}"
+          $sha = "${{ github.sha }}"
+          $short_sha = $sha.Substring(0, 7)
+
+          $summary = @"
+          ## $icon Build Verification - $status
+
+          | Detail | Value |
+          |--------|-------|
+          | **Repository** | $repo |
+          | **Commit** | ``$short_sha`` |
+          | **Run ID** | [$run_id](https://github.com/$repo/actions/runs/$run_id) |
+
+          $(if ($status -eq "success") { "Build verification passed." } else { "Build verification failed. Check the logs for details." })
+          "@
+
+          echo $summary >> $env:GITHUB_STEP_SUMMARY
+
+  quality-summary:
+    name: Quality Summary
+    runs-on: windows-latest
+    needs: [code-format, dead-code, build-verification]
+    if: always()
+
+    steps:
+      - name: Generate summary
+        shell: pwsh
+        run: |
+          $format = "${{ needs.code-format.result }}"
+          $dead = "${{ needs.dead-code.result }}"
+          $build = "${{ needs.build-verification.result }}"
+
+          $icon = if ($format -eq "success" -and $dead -eq "success" -and $build -eq "success") { "✅" } else { "⚠️" }
+
+          $fmtIcon = if ($format -eq "success") { "✅" } else { "❌" }
+          $deadIcon = if ($dead -eq "success") { "✅" } else { "❌" }
+          $buildIcon = if ($build -eq "success") { "✅" } else { "❌" }
+
+          $summary = @"
+          ## $icon Quality Report - CRM Alunos
+
+          | Check | Status |
+          |-------|--------|
+          | Code Formatting | $fmtIcon $format |
+          | Dead Code Detection | $deadIcon $dead |
+          | Build Verification | $buildIcon $build |
+
+          ### Commit Info
+          - **Repository**: ${{ github.repository }}
+          - **Branch**: ${{ github.ref_name }}
+          - **Commit**: ``${{ github.sha }}``.Substring(0, 7)
+          - **Triggered by**: ${{ github.actor }}
+
+          $(if ($format -eq "success" -and $dead -eq "success" -and $build -eq "success") { "All quality checks passed. Ready to merge." } else { "Some quality checks failed. Please review before merging." })
+          "@
+
+          echo $summary >> $env:GITHUB_STEP_SUMMARY

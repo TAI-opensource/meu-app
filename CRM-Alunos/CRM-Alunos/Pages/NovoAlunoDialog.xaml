@@ -1,0 +1,84 @@
+<Window x:Class="CRM_Alunos.Pages.NovoAlunoDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Novo Aluno" Width="420" Height="420"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Background="White">
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Cadastrar Novo Aluno" FontSize="20" FontWeight="Bold" Foreground="#1E293B"/>
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Text="Nome *" Foreground="#64748B" FontSize="12" Margin="0,0,0,4"/>
+                <TextBox x:Name="TxtNome" Padding="8,6" Margin="0,0,0,12"/>
+
+                <TextBlock Text="CPF" Foreground="#64748B" FontSize="12" Margin="0,0,0,4"/>
+                <TextBox x:Name="TxtCPF" Padding="8,6" Margin="0,0,0,12"/>
+
+                <TextBlock Text="Email" Foreground="#64748B" FontSize="12" Margin="0,0,0,4"/>
+                <TextBox x:Name="TxtEmail" Padding="8,6" Margin="0,0,0,12"/>
+
+                <TextBlock Text="Telefone" Foreground="#64748B" FontSize="12" Margin="0,0,0,4"/>
+                <TextBox x:Name="TxtTelefone" Padding="8,6" Margin="0,0,0,12"/>
+
+                <TextBlock Text="Endereco" Foreground="#64748B" FontSize="12" Margin="0,0,0,4"/>
+                <TextBox x:Name="TxtEndereco" Padding="8,6" Margin="0,0,0,12"/>
+
+                <TextBlock Text="Turma" Foreground="#64748B" FontSize="12" Margin="0,0,0,4"/>
+                <ComboBox x:Name="CboTurma" Padding="8,6" Margin="0,0,0,12"
+                          DisplayMemberPath="Nome"/>
+
+                <TextBlock Text="Status" Foreground="#64748B" FontSize="12" Margin="0,0,0,4"/>
+                <ComboBox x:Name="CboStatus" Padding="8,6" Margin="0,0,0,0">
+                    <ComboBoxItem Content="Ativo"/>
+                    <ComboBoxItem Content="Inativo"/>
+                    <ComboBoxItem Content="Formado"/>
+                </ComboBox>
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Cancelar" Background="#E2E8F0" Foreground="#1E293B" BorderThickness="0"
+                    Padding="16,8" Cursor="Hand" Margin="0,0,8,0" Click="BtnCancelar_Click">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#CBD5E1"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+            <Button Content="Salvar" Background="#6366F1" Foreground="White" BorderThickness="0"
+                    Padding="16,8" Cursor="Hand" Click="BtnSalvar_Click">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#4F46E5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </StackPanel>
+    </Grid>
+</Window>

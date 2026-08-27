@@ -1,0 +1,68 @@
+name: Build CRM Alunos
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-wpf:
+    name: Build WPF (Windows)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Publish
+        run: dotnet publish CRM-Alunos/CRM-Alunos.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
+        shell: pwsh
+
+      - name: Verify output
+        shell: pwsh
+        run: |
+          $exePath = "publish/CRM-Alunos.exe"
+          if (Test-Path $exePath) {
+            $size = (Get-Item $exePath).Length / 1MB
+            Write-Host "Build OK: $exePath ($([math]::Round($size, 2)) MB)"
+          } else {
+            Write-Error "Build failed: $exePath not found"
+            exit 1
+          }
+
+  build-web:
+    name: Build Blazor Web (Linux)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore CRM-Alunos.Web/CRM-Alunos.Web.csproj
+
+      - name: Build
+        run: dotnet build CRM-Alunos.Web/CRM-Alunos.Web.csproj -c Release --no-restore
+
+      - name: Publish
+        run: dotnet publish CRM-Alunos.Web/CRM-Alunos.Web.csproj -c Release -o publish-web
+
+      - name: Verify output
+        run: |
+          if [ -f "publish-web/CRM-Alunos.Web.dll" ]; then
+            echo "Build OK: publish-web/CRM-Alunos.Web.dll"
+          else
+            echo "Build failed: DLL not found"
+            exit 1
+          fi

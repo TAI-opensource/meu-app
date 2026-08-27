@@ -1,0 +1,109 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 3 * * 1"
+
+permissions:
+  security-events: write
+  contents: read
+
+jobs:
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+          deny-licenses: GPL-3.0, AGPL-3.0
+
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
+
+  code-scan:
+    name: Code Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  license-audit:
+    name: License Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check licenses
+        run: |
+          echo "## License Audit" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check main license
+          if [ -f "LICENSE" ]; then
+            echo "- **Project License**: $(head -1 LICENSE)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "::warning::No LICENSE file found"
+          fi
+
+          # Check for problematic licenses in csproj
+          if grep -q "GPL" CRM-Alunos/CRM-Alunos.csproj 2>/dev/null; then
+            echo "::warning::GPL dependency detected"
+            echo "- **Warning**: GPL dependency found" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Dependencies**: No restrictive licenses detected" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  file-integrity:
+    name: File Integrity Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for suspicious files
+        run: |
+          echo "## File Integrity Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check for suspicious file extensions
+          SUSPICIOUS=$(find . -type f \( -name "*.exe" -o -name "*.dll" -o -name "*.bat" -o -name "*.cmd" -o -name "*.ps1" \) ! -path "./.git/*" 2>/dev/null | wc -l)
+
+          if [ $SUSPICIOUS -gt 0 ]; then
+            echo "::warning::Found $SUSPICIOUS executable/script files"
+            echo "- **Suspicious files**: $SUSPICIOUS found" >> $GITHUB_STEP_SUMMARY
+            find . -type f \( -name "*.exe" -o -name "*.dll" -o -name "*.bat" -o -name "*.cmd" -o -name "*.ps1" \) ! -path "./.git/*" 2>/dev/null >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **File integrity**: No suspicious files found" >> $GITHUB_STEP_SUMMARY
+          fi

@@ -2,75 +2,128 @@
     x:Class="CRM_Alunos.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:CRM_Alunos"
-    xmlns:pages="using:CRM_Alunos.Pages"
-    Title="CRM Alunos - Gestão de Turmas"
-    Width="1400" Height="800" MinWidth="1000" MinHeight="600"
-    Background="#F8F9FA">
+    xmlns:pages="clr-namespace:CRM_Alunos.Pages"
+    Title="CRM Alunos"
+    Width="1400" Height="800"
+    MinWidth="1000" MinHeight="600"
+    WindowStartupLocation="CenterScreen"
+    WindowStyle="SingleBorderWindow"
+    ResizeMode="CanResizeWithGrip"
+    Background="#F1F5F9">
+
+    <Window.Resources>
+        <Style x:Key="NavButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="14,10"/>
+            <Setter Property="Margin" Value="4,2"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#334155"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="260"/>
+            <ColumnDefinition Width="240"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
         <!-- Sidebar -->
-        <Grid Grid.Column="0" Background="#1E1E2E">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="64"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
+        <Border Grid.Column="0" Background="#1E293B">
+            <DockPanel>
+                <!-- Logo -->
+                <Border DockPanel.Dock="Top" Height="64" Padding="20,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="&#xE787;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                   Margin="0,0,12,0" Foreground="#818CF8" VerticalAlignment="Center"/>
+                        <TextBlock Text="CRM Alunos" FontSize="18" FontWeight="SemiBold"
+                                   Foreground="White" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
 
-            <!-- Logo/App Title -->
-            <Border Grid.Row="0" Padding="20,0" VerticalAlignment="Center">
-                <StackPanel Orientation="Horizontal" Spacing="12">
-                    <FontIcon Glyph="&#xE9D9;" FontSize="24" Foreground="#818CF8"/>
-                    <TextBlock Text="CRM Alunos" FontSize="18" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
+                <!-- Footer -->
+                <Border DockPanel.Dock="Bottom" Padding="20,16"
+                        BorderBrush="#334155" BorderThickness="0,1,0,0">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                   Margin="0,0,10,0" Foreground="#64748B" VerticalAlignment="Center"/>
+                        <TextBlock Text="Usuário Local" Foreground="#64748B"
+                                   FontSize="12" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Navigation Buttons -->
+                <StackPanel Margin="8,8">
+                    <Button x:Name="BtnDashboard" Style="{StaticResource NavButtonStyle}"
+                            Click="BtnDashboard_Click" Tag="Dashboard">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE80F;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                       Margin="0,0,12,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Dashboard" FontSize="14"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="BtnTurmas" Style="{StaticResource NavButtonStyle}"
+                            Click="BtnTurmas_Click" Tag="Turmas">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE805;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                       Margin="0,0,12,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Turmas" FontSize="14"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="BtnAlunos" Style="{StaticResource NavButtonStyle}"
+                            Click="BtnAlunos_Click" Tag="Alunos">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                       Margin="0,0,12,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Alunos" FontSize="14"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="BtnDocumentos" Style="{StaticResource NavButtonStyle}"
+                            Click="BtnDocumentos_Click" Tag="Documentos">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE8A5;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                       Margin="0,0,12,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Documentos" FontSize="14"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Separator Background="#334155" Margin="8,8"/>
+                    <Button x:Name="BtnConfiguracoes" Style="{StaticResource NavButtonStyle}"
+                            Click="BtnConfiguracoes_Click" Tag="Configuracoes">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                                       Margin="0,0,12,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Configuracoes" FontSize="14"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
-            </Border>
+            </DockPanel>
+        </Border>
 
-            <!-- Navigation -->
-            <ListView x:Name="NavListView" Grid.Row="1"
-                      SelectionChanged="NavListView_SelectionChanged"
-                      Padding="8,8" SelectionMode="Single"
-                      Background="Transparent">
-                <ListViewItem x:Name="NavDashboard" Tag="Dashboard" Padding="12,10" Margin="0,2" CornerRadius="8">
-                    <StackPanel Orientation="Horizontal" Spacing="12">
-                        <FontIcon Glyph="&#xE80F;" FontSize="18" Foreground="#94A3B8"/>
-                        <TextBlock Text="Dashboard" Foreground="#CBD5E1" FontSize="14" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </ListViewItem>
-                <ListViewItem x:Name="NavTurmas" Tag="Turmas" Padding="12,10" Margin="0,2" CornerRadius="8">
-                    <StackPanel Orientation="Horizontal" Spacing="12">
-                        <FontIcon Glyph="&#xE8B4;" FontSize="18" Foreground="#94A3B8"/>
-                        <TextBlock Text="Turmas" Foreground="#CBD5E1" FontSize="14" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </ListViewItem>
-                <ListViewItem x:Name="NavAlunos" Tag="Alunos" Padding="12,10" Margin="0,2" CornerRadius="8">
-                    <StackPanel Orientation="Horizontal" Spacing="12">
-                        <FontIcon Glyph="&#xE77B;" FontSize="18" Foreground="#94A3B8"/>
-                        <TextBlock Text="Alunos" Foreground="#CBD5E1" FontSize="14" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </ListViewItem>
-                <ListViewItem x:Name="NavDocumentos" Tag="Documentos" Padding="12,10" Margin="0,2" CornerRadius="8">
-                    <StackPanel Orientation="Horizontal" Spacing="12">
-                        <FontIcon Glyph="&#xE8A5;" FontSize="18" Foreground="#94A3B8"/>
-                        <TextBlock Text="Documentos" Foreground="#CBD5E1" FontSize="14" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </ListViewItem>
-            </ListView>
-
-            <!-- Footer -->
-            <Border Grid.Row="2" Padding="20,16" BorderBrush="#334155" BorderThickness="0,1,0,0">
-                <StackPanel Orientation="Horizontal" Spacing="10">
-                    <FontIcon Glyph="&#xE77B;" FontSize="16" Foreground="#64748B"/>
-                    <TextBlock Text="Usuário Local" Foreground="#64748B" FontSize="12" VerticalAlignment="Center"/>
-                </StackPanel>
-            </Border>
-        </Grid>
-
-        <!-- Main Content -->
-        <Frame x:Name="ContentFrame" Grid.Column="1" Background="#F8F9FA"/>
+        <!-- Main Content Area -->
+        <ContentControl x:Name="ContentFrame" Grid.Column="1" Background="#F1F5F9"/>
     </Grid>
 </Window>

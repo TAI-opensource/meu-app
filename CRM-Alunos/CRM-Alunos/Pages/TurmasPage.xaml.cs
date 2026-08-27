@@ -1,26 +1,22 @@
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.EntityFrameworkCore;
-using CRM_Alunos.Data;
-using CRM_Alunos.Models;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
-using Windows.UI;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using CRM_Alunos.Data;
+using CRM_Alunos.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace CRM_Alunos.Pages
 {
-    public sealed partial class TurmasPage : Page
+    public partial class TurmasPage : UserControl
     {
-        private readonly AppDbContext _context = new AppDbContext();
         private List<Turma> _allTurmas = new();
 
         public TurmasPage()
         {
-            this.InitializeComponent();
-            this.Loaded += TurmasPage_Loaded;
+            InitializeComponent();
+            Loaded += TurmasPage_Loaded;
         }
 
         private async void TurmasPage_Loaded(object sender, RoutedEventArgs e)
@@ -28,134 +24,82 @@ namespace CRM_Alunos.Pages
             await LoadTurmas();
         }
 
-        private async Task LoadTurmas()
+        private async System.Threading.Tasks.Task LoadTurmas(string? search = null)
         {
             try
             {
-                _allTurmas = await _context.Turmas.Include(t => t.Alunos).ToListAsync();
-                RenderTurmas(_allTurmas);
+                using var context = new AppDbContext();
+                var query = context.Turmas.Include(t => t.Alunos).AsQueryable();
+
+                if (!string.IsNullOrWhiteSpace(search))
+                    query = query.Where(t => t.Nome.Contains(search));
+
+                _allTurmas = await query.OrderBy(t => t.Nome).ToListAsync();
+                DgTurmas.ItemsSource = _allTurmas;
             }
-            catch (Exception ex)
+            catch
             {
-                EmptyState.Visibility = Visibility.Visible;
+                _allTurmas = new List<Turma>();
+                DgTurmas.ItemsSource = _allTurmas;
             }
         }
 
-        private void RenderTurmas(List<Turma> turmas)
+        private async void TxtSearch_KeyUp(object sender, KeyEventArgs e)
         {
-            TurmasListView.Items.Clear();
-            
-            if (turmas.Count == 0)
+            await LoadTurmas(TxtSearch.Text);
+        }
+
+        private void DgTurmas_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (DgTurmas.SelectedItem is Turma turma)
             {
-                EmptyState.Visibility = Visibility.Visible;
+                var main = Window.GetWindow(this) as MainWindow;
+                main?.NavigateTo(new AlunosPage(turma.Id));
+            }
+        }
+
+        private async void BtnSalvarInline_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(TxtNome.Text))
+            {
+                MessageBox.Show("O campo Nome é obrigatório.", "Validação", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            
-            EmptyState.Visibility = Visibility.Collapsed;
-            
-            foreach (var turma in turmas)
+
+            var turma = new Turma
             {
-                var grid = new Grid { Padding = new Thickness(20, 12, 20, 12) };
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(100) });
-                grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(140) });
+                Nome = TxtNome.Text.Trim(),
+                Periodo = TxtPeriodo.Text.Trim(),
+                Horario = TxtHorario.Text.Trim(),
+                Sala = TxtSala.Text.Trim(),
+                Status = (CboStatus.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Content?.ToString() ?? "Ativa",
+                DataCriacao = DateTime.Now,
+                AnoLetivo = DateTime.Now.Year
+            };
 
-                grid.Children.Add(new TextBlock { Text = turma.Nome, FontSize = 14, Foreground = new SolidColorBrush(Color.FromArgb(255, 30, 41, 59)), VerticalAlignment = VerticalAlignment.Center });
-                
-                var anoText = new TextBlock { Text = turma.AnoLetivo.ToString(), FontSize = 14, Foreground = new SolidColorBrush(Color.FromArgb(255, 71, 85, 105)), VerticalAlignment = VerticalAlignment.Center };
-                Grid.SetColumn(anoText, 1);
-                grid.Children.Add(anoText);
-                
-                var serieText = new TextBlock { Text = turma.Serie ?? "-", FontSize = 14, Foreground = new SolidColorBrush(Color.FromArgb(255, 71, 85, 105)), VerticalAlignment = VerticalAlignment.Center };
-                Grid.SetColumn(serieText, 2);
-                grid.Children.Add(serieText);
-                
-                var alunosText = new TextBlock { Text = (turma.Alunos?.Count ?? 0).ToString(), FontSize = 14, Foreground = new SolidColorBrush(Color.FromArgb(255, 71, 85, 105)), VerticalAlignment = VerticalAlignment.Center };
-                Grid.SetColumn(alunosText, 3);
-                grid.Children.Add(alunosText);
-                
-                var dataText = new TextBlock { Text = turma.DataCriacao.ToString("dd/MM/yyyy"), FontSize = 13, Foreground = new SolidColorBrush(Color.FromArgb(255, 148, 163, 184)), VerticalAlignment = VerticalAlignment.Center };
-                Grid.SetColumn(dataText, 4);
-                grid.Children.Add(dataText);
+            using var context = new AppDbContext();
+            context.Turmas.Add(turma);
+            await context.SaveChangesAsync();
 
-                var border = new Border
-                {
-                    Child = grid,
-                    Tag = turma,
-                    BorderBrush = new SolidColorBrush(Color.FromArgb(255, 226, 232, 240)),
-                    BorderThickness = new Thickness(0, 0, 0, 1),
-                    Padding = new Thickness(0)
-                };
-                
-                border.PointerPressed += (s, e) =>
-                {
-                    if (border.Tag is Turma t)
-                    {
-                        Frame.Navigate(typeof(AlunosPage), t.Id);
-                    }
-                };
+            TxtNome.Text = string.Empty;
+            TxtPeriodo.Text = string.Empty;
+            TxtHorario.Text = string.Empty;
+            TxtSala.Text = string.Empty;
+            CboStatus.SelectedIndex = 0;
 
-                TurmasListView.Items.Add(border);
-            }
+            await LoadTurmas();
         }
-
-        private void SearchBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
-        {
-            if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
-            {
-                var filtered = _allTurmas.Where(t => 
-                    t.Nome.Contains(SearchBox.Text, StringComparison.OrdinalIgnoreCase) ||
-                    (t.Serie != null && t.Serie.Contains(SearchBox.Text, StringComparison.OrdinalIgnoreCase))
-                ).ToList();
-                RenderTurmas(filtered);
-            }
-        }
-
-        private void TurmasListView_ItemClick(object sender, ItemClickEventArgs e) { }
 
         private async void BtnNovaTurma_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new ContentDialog
+            var dialog = new NovaTurmaDialog
             {
-                Title = "Nova Turma",
-                PrimaryButtonText = "Criar",
-                CloseButtonText = "Cancelar",
-                DefaultButton = ContentDialogButton.Primary,
-                XamlRoot = this.XamlRoot
+                Owner = Window.GetWindow(this)
             };
 
-            var stack = new StackPanel { Spacing = 12 };
-            
-            var nomeBox = new TextBox { Header = "Nome da Turma", PlaceholderText = "Ex: 3ano A" };
-            var anoBox = new TextBox { Header = "Ano Letivo", PlaceholderText = "2024" };
-            var serieBox = new TextBox { Header = "Série", PlaceholderText = "Ex: 3 ano" };
-            var descBox = new TextBox { Header = "Descrição", PlaceholderText = "Opcional" };
-            
-            stack.Children.Add(nomeBox);
-            stack.Children.Add(anoBox);
-            stack.Children.Add(serieBox);
-            stack.Children.Add(descBox);
-            dialog.Content = stack;
-
-            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            if (dialog.ShowDialog() == true && dialog.Saved)
             {
-                if (int.TryParse(anoBox.Text, out int ano))
-                {
-                    var turma = new Turma
-                    {
-                        Nome = nomeBox.Text,
-                        AnoLetivo = ano,
-                        Serie = serieBox.Text,
-                        Descricao = descBox.Text,
-                        DataCriacao = DateTime.Now
-                    };
-                    
-                    _context.Turmas.Add(turma);
-                    await _context.SaveChangesAsync();
-                    await LoadTurmas();
-                }
+                await LoadTurmas();
             }
         }
     }

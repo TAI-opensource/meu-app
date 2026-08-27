@@ -1,7 +1,8 @@
+using System.IO;
+using System.Windows;
+using CRM_Alunos.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.UI.Xaml;
-using CRM_Alunos.Data;
 
 namespace CRM_Alunos;
 
@@ -11,35 +12,56 @@ public partial class App : Application
 
     public static IServiceProvider? Services { get; private set; }
 
-    public App()
+    protected override void OnStartup(StartupEventArgs e)
     {
-        this.InitializeComponent();
-    }
+        base.OnStartup(e);
 
-    protected override void OnLaunched(LaunchActivatedEventArgs args)
-    {
-        var services = new ServiceCollection();
-        ConfigureServices(services);
-        _serviceProvider = services.BuildServiceProvider();
-        Services = _serviceProvider;
-
-        using (var scope = _serviceProvider.CreateScope())
+        AppDomain.CurrentDomain.UnhandledException += (s, args) =>
         {
-            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            dbContext.Database.EnsureCreated();
+            var ex = args.ExceptionObject as Exception;
+            MessageBox.Show($"Erro fatal: {ex?.Message}\n\n{ex?.StackTrace}", "CRM Alunos - Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+        };
+
+        DispatcherUnhandledException += (s, args) =>
+        {
+            MessageBox.Show($"Erro: {args.Exception.Message}\n\n{args.Exception.StackTrace}", "CRM Alunos - Erro", MessageBoxButton.OK, MessageBoxImage.Error);
+            args.Handled = true;
+        };
+
+        try
+        {
+            var dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "crm_alunos.db");
+            var connectionString = $"Data Source={dbPath}";
+
+            var services = new ServiceCollection();
+            ConfigureServices(services, connectionString);
+            _serviceProvider = services.BuildServiceProvider();
+            Services = _serviceProvider;
+
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                dbContext.Database.EnsureCreated();
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Erro ao inicializar o banco de dados.\n\n" +
+                $"Erro: {ex.Message}\n\n" +
+                $"Detalhes: {ex.InnerException?.Message ?? "N/A"}",
+                "CRM Alunos - Erro",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
 
         var mainWindow = new MainWindow();
-        MainWindow = mainWindow;
-        mainWindow.Activate();
+        mainWindow.Show();
     }
 
-    public static Window? MainWindow { get; private set; }
-    public Window? m_window => MainWindow;
-
-    private static void ConfigureServices(IServiceCollection services)
+    private static void ConfigureServices(IServiceCollection services, string connectionString)
     {
         services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlite("Data Source=crm_alunos.db"));
+            options.UseSqlite(connectionString));
     }
 }

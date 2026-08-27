@@ -1,55 +1,76 @@
-# CRM Alunos - Sistema de Gestão de Turmas e Alunos
+# CRM Alunos - Sistema de Gestao de Turmas e Alunos
 
-Aplicativo desktop WinUI 3 para gestão de turmas, alunos e documentos.
+Aplicativo desktop WPF para gestao de turmas, alunos e documentos.
 
-## Descrição
+## Descricao
 
-O CRM Alunos é um sistema desktop construído com WinUI 3 e Windows App SDK para auxiliar instituições de ensino na organização de turmas, cadastro de alunos e gerenciamento de documentos acadêmicos. O projeto é totalmente local e gratuito.
+O CRM Alunos e um sistema desktop construido com WPF para auxiliar instituicoes de ensino na organizacao de turmas, cadastro de alunos e gerenciamento de documentos academicos. O projeto e totalmente local e gratuito, utilizando SQLite como banco de dados (arquivo local, sem necessidade de servidor).
 
 ## Tech Stack
 
 - **Linguagem**: C# (.NET 8.0)
-- **UI Framework**: WinUI 3 (Windows App SDK 1.5.0)
-- **Banco de dados**: SQLite
+- **UI Framework**: WPF
+- **Banco de dados**: SQLite (arquivo local)
 - **ORM**: Entity Framework Core 8.0
 - **Arquitetura**: MVVM (CommunityToolkit.Mvvm)
-- **Injeção de dependência**: Microsoft.Extensions.DependencyInjection
 
 ## Funcionalidades
 
-- **Gestão de Turmas** - Criar, editar e listar turmas
-- **Gestão de Alunos** - Cadastro e organização de alunos por turma
-- **Sistema de Documentos** - Upload de PDFs, criação e organização de pastas
-- **Interface Moderna** - Estilo Twenty CRM com design limpo e intuitivo
-- **Totalmente Local** - Sem necessidade de servidor, dados armazenados localmente em SQLite
+- **Gestao de Turmas** - Criar, editar e listar turmas
+- **Gestao de Alunos** - Cadastro e organizacao de alunos por turma
+- **Documentos PDF** - Upload e gerenciamento de documentos PDF
+- **Sistema de Pastas** - Organizacao de documentos em pastas
+- **Interface Moderna** - Design limpo e intuitivo
+- **Totalmente Local** - Sem necessidade de servidor, banco de dados em arquivo
+
+## Como Usar
+
+1. Baixe o release mais recente em [Releases](https://github.com/mineblox99los/CRM-Install/releases)
+2. Extraia o ZIP em qualquer pasta
+3. Execute `CRM-Alunos.exe`
+4. Pronto! O banco de dados e criado automaticamente
 
 ## Como Buildar
 
-O projeto é buildado automaticamente via **GitHub Actions** sempre que alterações são feitas na pasta `CRM-Alunos/` na branch `main`.
-
-### Build Manual
-
-Para buildar localmente, é necessário:
-
-1. [Visual Studio 2022](https://visualstudio.microsoft.com/) com o workload **Desenvolvimento de Aplicativos da Plataforma Universal Windows** instalado
-2. [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-
 ```bash
-dotnet restore CRM-Alunos/CRM-Alunos/CRM-Alunos.csproj
-dotnet build CRM-Alunos/CRM-Alunos/CRM-Alunos.csproj -c Release
+dotnet restore CRM-Alunos/CRM-Alunos.csproj
+dotnet build CRM-Alunos/CRM-Alunos.csproj -c Release
 ```
 
-### Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
 CRM-Alunos/
-├── CRM-Alunos.sln              # Solução do Visual Studio
+├── CRM-Alunos.sln
+├── README.md
 └── CRM-Alunos/
-    ├── CRM-Alunos.csproj       # Projeto WinUI 3
-    ├── Data/                    # Contexto e configurações do EF Core
-    └── Models/                  # Modelos de dados (Turma, Aluno, Documento)
+    ├── CRM-Alunos.csproj
+    ├── App.xaml / App.xaml.cs
+    ├── MainWindow.xaml / MainWindow.xaml.cs
+    ├── Data/
+    │   └── AppDbContext.cs
+    ├── Models/
+    │   ├── Turma.cs
+    │   ├── Aluno.cs
+    │   ├── Documento.cs
+    │   └── Pasta.cs
+    └── Pages/
+        ├── DashboardPage.xaml
+        ├── TurmasPage.xaml
+        ├── AlunosPage.xaml
+        ├── AlunoDetailPage.xaml
+        ├── DocumentosPage.xaml
+        ├── NovaTurmaDialog.xaml
+        ├── NovoAlunoDialog.xaml
+        └── NovaPastaDialog.xaml
 ```
 
-## Licença
+## GitHub Actions
 
-MIT License - veja o arquivo [LICENSE](../LICENSE) para mais detalhes.
+- **Build**: Build automatizado em cada push
+- **Quality**: Formatacao de codigo, deteccao de codigo morto
+- **Release**: Release automatico com ZIP para download
+
+## Licenca
+
+MIT License
