@@ -3,68 +3,18 @@
 @using CRM_Alunos.Web.Models
 @using Microsoft.EntityFrameworkCore
 @inject IDbContextFactory<AppDbContext> DbFactory
+@inject IDebugService DebugService
+@inject NavigationManager Navigation
 
 <PageTitle>Turmas - CRM Alunos</PageTitle>
 
 <div class="tw-page-header">
     <h1 class="tw-page-title">Turmas</h1>
-    <button class="tw-btn tw-btn-primary" @onclick="ShowForm">
+    <button class="tw-btn tw-btn-primary" @onclick="OpenCreateDialog">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Nova Turma
     </button>
 </div>
-
-@if (showForm)
-{
-    <div class="tw-card" style="margin-bottom: 16px;">
-        <h2 style="font-size: 14px; font-weight: 500; margin-bottom: 16px;">@(editingTurma.Id > 0 ? "Editar Turma" : "Nova Turma")</h2>
-        <div class="tw-form-row">
-            <div class="tw-form-group">
-                <label class="tw-form-label">Nome</label>
-                <input @bind="editingTurma.Nome" class="tw-input" style="width: 100%;" />
-            </div>
-            <div class="tw-form-group">
-                <label class="tw-form-label">Descrição</label>
-                <input @bind="editingTurma.Descricao" class="tw-input" style="width: 100%;" />
-            </div>
-            <div class="tw-form-group">
-                <label class="tw-form-label">Período</label>
-                <select @bind="editingTurma.Periodo" class="tw-input" style="width: 100%;">
-                    <option value="Manha">Manhã</option>
-                    <option value="Tarde">Tarde</option>
-                    <option value="Noite">Noite</option>
-                </select>
-            </div>
-            <div class="tw-form-group">
-                <label class="tw-form-label">Horário</label>
-                <input @bind="editingTurma.Horario" class="tw-input" style="width: 100%;" />
-            </div>
-            <div class="tw-form-group">
-                <label class="tw-form-label">Sala</label>
-                <input @bind="editingTurma.Sala" class="tw-input" style="width: 100%;" />
-            </div>
-            <div class="tw-form-group">
-                <label class="tw-form-label">Série</label>
-                <input @bind="editingTurma.Serie" class="tw-input" style="width: 100%;" />
-            </div>
-            <div class="tw-form-group">
-                <label class="tw-form-label">Ano Letivo</label>
-                <input @bind="editingTurma.AnoLetivo" type="number" class="tw-input" style="width: 100%;" />
-            </div>
-            <div class="tw-form-group">
-                <label class="tw-form-label">Status</label>
-                <select @bind="editingTurma.Status" class="tw-input" style="width: 100%;">
-                    <option value="Ativa">Ativa</option>
-                    <option value="Inativa">Inativa</option>
-                </select>
-            </div>
-        </div>
-        <div style="display: flex; gap: 8px; margin-top: 16px;">
-            <button class="tw-btn tw-btn-primary" @onclick="SaveTurma">Salvar</button>
-            <button class="tw-btn tw-btn-secondary" @onclick="CancelForm">Cancelar</button>
-        </div>
-    </div>
-}
 
 <div class="tw-table-container">
     <table class="tw-table">
@@ -76,7 +26,7 @@
                 <th>Série</th>
                 <th>Status</th>
                 <th>Alunos</th>
-                <th style="width: 100px;">Ações</th>
+                <th style="width: 80px;"></th>
             </tr>
         </thead>
         <tbody>
@@ -88,17 +38,15 @@
                     <td>@turma.Sala</td>
                     <td>@turma.Serie</td>
                     <td>
-                        <span class="tw-badge @(turma.Status == "Ativa" ? "tw-badge-success" : "tw-badge-danger")">
-                            @turma.Status
-                        </span>
+                        <span class="tw-badge @(turma.Status == "Ativa" ? "tw-badge-success" : "tw-badge-danger")">@turma.Status</span>
                     </td>
                     <td>@(turma.Alunos?.Count ?? 0)</td>
                     <td>
-                        <div style="display: flex; gap: 8px;">
-                            <button class="tw-btn tw-btn-ghost" @onclick="() => EditTurma(turma)" style="padding: 4px 8px;">
+                        <div style="display: flex; gap: 4px;">
+                            <button class="tw-btn tw-btn-ghost tw-btn-sm" @onclick="() => OpenEditDialog(turma)" title="Editar">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                             </button>
-                            <button class="tw-btn tw-btn-danger" @onclick="() => DeleteTurma(turma.Id)" style="padding: 4px 8px;">
+                            <button class="tw-btn tw-btn-danger tw-btn-sm" @onclick="() => OpenDeleteDialog(turma)" title="Excluir">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                             </button>
                         </div>
@@ -107,12 +55,95 @@
             }
         </tbody>
     </table>
+    @if (!turmas.Any())
+    {
+        <div class="tw-empty">
+            <svg class="tw-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            <p>Nenhuma turma encontrada</p>
+        </div>
+    }
 </div>
+
+@if (showDialog)
+{
+    <div class="tw-dialog-overlay" @onclick="CloseDialog">
+        <div class="tw-dialog" @onclick:stopPropagation="true">
+            <div class="tw-dialog-header">@(editingTurma.Id > 0 ? "Editar Turma" : "Nova Turma")</div>
+            <div class="tw-dialog-body">
+                <div class="tw-form-row">
+                    <div class="tw-form-group">
+                        <label class="tw-form-label">Nome *</label>
+                        <input @bind="editingTurma.Nome" class="tw-input" />
+                    </div>
+                    <div class="tw-form-group">
+                        <label class="tw-form-label">Descrição</label>
+                        <input @bind="editingTurma.Descricao" class="tw-input" />
+                    </div>
+                    <div class="tw-form-group">
+                        <label class="tw-form-label">Período</label>
+                        <select @bind="editingTurma.Periodo" class="tw-input">
+                            <option value="Manha">Manhã</option>
+                            <option value="Tarde">Tarde</option>
+                            <option value="Noite">Noite</option>
+                        </select>
+                    </div>
+                    <div class="tw-form-group">
+                        <label class="tw-form-label">Horário</label>
+                        <input @bind="editingTurma.Horario" class="tw-input" />
+                    </div>
+                    <div class="tw-form-group">
+                        <label class="tw-form-label">Sala</label>
+                        <input @bind="editingTurma.Sala" class="tw-input" />
+                    </div>
+                    <div class="tw-form-group">
+                        <label class="tw-form-label">Série</label>
+                        <input @bind="editingTurma.Serie" class="tw-input" />
+                    </div>
+                    <div class="tw-form-group">
+                        <label class="tw-form-label">Ano Letivo</label>
+                        <input @bind="editingTurma.AnoLetivo" type="number" class="tw-input" />
+                    </div>
+                    <div class="tw-form-group">
+                        <label class="tw-form-label">Status</label>
+                        <select @bind="editingTurma.Status" class="tw-input">
+                            <option value="Ativa">Ativa</option>
+                            <option value="Inativa">Inativa</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="tw-dialog-footer">
+                <button class="tw-btn tw-btn-secondary" @onclick="CloseDialog">Cancelar</button>
+                <button class="tw-btn tw-btn-primary" @onclick="SaveTurma">Salvar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (showDeleteDialog)
+{
+    <div class="tw-dialog-overlay" @onclick="CloseDeleteDialog">
+        <div class="tw-dialog" style="width: 400px;" @onclick:stopPropagation="true">
+            <div class="tw-dialog-header">Excluir Turma</div>
+            <div class="tw-dialog-body">
+                <p style="font-size: 13px; color: var(--twenty-text-secondary);">
+                    Tem certeza que deseja excluir a turma <strong>@turmaToDelete?.Nome</strong>? Esta ação não pode ser desfeita.
+                </p>
+            </div>
+            <div class="tw-dialog-footer">
+                <button class="tw-btn tw-btn-secondary" @onclick="CloseDeleteDialog">Cancelar</button>
+                <button class="tw-btn tw-btn-danger" style="background: var(--twenty-danger); color: white;" @onclick="ConfirmDelete">Excluir</button>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     private List<Turma> turmas = new();
     private Turma editingTurma = new();
-    private bool showForm;
+    private Turma? turmaToDelete;
+    private bool showDialog;
+    private bool showDeleteDialog;
 
     protected override async Task OnInitializedAsync()
     {
@@ -125,45 +156,76 @@
         turmas = await db.Turmas.Include(t => t.Alunos).OrderByDescending(t => t.DataCriacao).ToListAsync();
     }
 
-    private void ShowForm()
+    private void OpenCreateDialog()
     {
         editingTurma = new Turma { AnoLetivo = DateTime.Now.Year, Status = "Ativa" };
-        showForm = true;
+        showDialog = true;
     }
 
-    private void EditTurma(Turma t)
+    private void OpenEditDialog(Turma t)
     {
         editingTurma = t;
-        showForm = true;
+        showDialog = true;
     }
 
-    private void CancelForm()
+    private void CloseDialog()
     {
-        showForm = false;
+        showDialog = false;
         editingTurma = new();
+    }
+
+    private void OpenDeleteDialog(Turma t)
+    {
+        turmaToDelete = t;
+        showDeleteDialog = true;
+    }
+
+    private void CloseDeleteDialog()
+    {
+        showDeleteDialog = false;
+        turmaToDelete = null;
     }
 
     private async Task SaveTurma()
     {
-        using var db = await DbFactory.CreateDbContextAsync();
-        if (editingTurma.Id > 0)
-            db.Turmas.Update(editingTurma);
-        else
-            db.Turmas.Add(editingTurma);
-        await db.SaveChangesAsync();
-        showForm = false;
-        await LoadTurmas();
+        try
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+            if (editingTurma.Id > 0)
+                db.Turmas.Update(editingTurma);
+            else
+                db.Turmas.Add(editingTurma);
+            await db.SaveChangesAsync();
+            showDialog = false;
+            await LoadTurmas();
+        }
+        catch (Exception ex)
+        {
+            DebugService.CaptureError(ex, "Salvando turma");
+            Navigation.NavigateTo("/debug");
+        }
     }
 
-    private async Task DeleteTurma(int id)
+    private async Task ConfirmDelete()
     {
-        using var db = await DbFactory.CreateDbContextAsync();
-        var turma = await db.Turmas.FindAsync(id);
-        if (turma != null)
+        try
         {
-            db.Turmas.Remove(turma);
-            await db.SaveChangesAsync();
+            if (turmaToDelete == null) return;
+            using var db = await DbFactory.CreateDbContextAsync();
+            var turma = await db.Turmas.FindAsync(turmaToDelete.Id);
+            if (turma != null)
+            {
+                db.Turmas.Remove(turma);
+                await db.SaveChangesAsync();
+            }
+            showDeleteDialog = false;
+            turmaToDelete = null;
             await LoadTurmas();
+        }
+        catch (Exception ex)
+        {
+            DebugService.CaptureError(ex, "Excluindo turma");
+            Navigation.NavigateTo("/debug");
         }
     }
 }

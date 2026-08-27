@@ -3,6 +3,8 @@
 @using CRM_Alunos.Web.Models
 @using Microsoft.EntityFrameworkCore
 @inject IDbContextFactory<AppDbContext> DbFactory
+@inject IDebugService DebugService
+@inject NavigationManager Navigation
 
 <PageTitle>Documentos - CRM Alunos</PageTitle>
 
@@ -19,7 +21,7 @@
                 <th>Aluno</th>
                 <th>Tamanho</th>
                 <th>Data Upload</th>
-                <th style="width: 80px;">Ações</th>
+                <th style="width: 60px;"></th>
             </tr>
         </thead>
         <tbody>
@@ -32,7 +34,7 @@
                     <td>@FormatSize(doc.Tamanho)</td>
                     <td>@doc.DataUpload.ToString("dd/MM/yyyy")</td>
                     <td>
-                        <button class="tw-btn tw-btn-danger" @onclick="() => DeleteDocumento(doc.Id)" style="padding: 4px 8px;">
+                        <button class="tw-btn tw-btn-danger tw-btn-sm" @onclick="() => OpenDeleteDialog(doc)" title="Excluir">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                         </button>
                     </td>
@@ -43,17 +45,34 @@
     @if (!documentos.Any())
     {
         <div class="tw-empty">
-            <svg class="tw-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-            </svg>
+            <svg class="tw-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             <p>Nenhum documento encontrado</p>
         </div>
     }
 </div>
 
+@if (showDeleteDialog)
+{
+    <div class="tw-dialog-overlay" @onclick="CloseDeleteDialog">
+        <div class="tw-dialog" style="width: 400px;" @onclick:stopPropagation="true">
+            <div class="tw-dialog-header">Excluir Documento</div>
+            <div class="tw-dialog-body">
+                <p style="font-size: 13px; color: var(--twenty-text-secondary);">
+                    Tem certeza que deseja excluir o documento <strong>@docToDelete?.Nome</strong>? Esta ação não pode ser desfeita.
+                </p>
+            </div>
+            <div class="tw-dialog-footer">
+                <button class="tw-btn tw-btn-secondary" @onclick="CloseDeleteDialog">Cancelar</button>
+                <button class="tw-btn" style="background: var(--twenty-danger); color: white;" @onclick="ConfirmDelete">Excluir</button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<Documento> documentos = new();
+    private Documento? docToDelete;
+    private bool showDeleteDialog;
 
     protected override async Task OnInitializedAsync()
     {
@@ -61,15 +80,38 @@
         documentos = await db.Documentos.Include(d => d.Aluno).OrderByDescending(d => d.DataUpload).ToListAsync();
     }
 
-    private async Task DeleteDocumento(int id)
+    private void OpenDeleteDialog(Documento doc)
     {
-        using var db = await DbFactory.CreateDbContextAsync();
-        var doc = await db.Documentos.FindAsync(id);
-        if (doc != null)
+        docToDelete = doc;
+        showDeleteDialog = true;
+    }
+
+    private void CloseDeleteDialog()
+    {
+        showDeleteDialog = false;
+        docToDelete = null;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        try
         {
-            db.Documentos.Remove(doc);
-            await db.SaveChangesAsync();
+            if (docToDelete == null) return;
+            using var db = await DbFactory.CreateDbContextAsync();
+            var doc = await db.Documentos.FindAsync(docToDelete.Id);
+            if (doc != null)
+            {
+                db.Documentos.Remove(doc);
+                await db.SaveChangesAsync();
+            }
+            showDeleteDialog = false;
+            docToDelete = null;
             documentos = await db.Documentos.Include(d => d.Aluno).OrderByDescending(d => d.DataUpload).ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            DebugService.CaptureError(ex, "Excluindo documento");
+            Navigation.NavigateTo("/debug");
         }
     }
 
