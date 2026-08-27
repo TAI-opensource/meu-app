@@ -1,0 +1,113 @@
+name: Release CRM Alunos
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    name: Build WPF Windows
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Publish WPF
+        run: dotnet publish CRM-Alunos/CRM-Alunos.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish-win
+        shell: pwsh
+
+      - name: Verify
+        shell: pwsh
+        run: |
+          if (Test-Path "publish-win/CRM-Alunos.exe") {
+            $size = [math]::Round((Get-Item "publish-win/CRM-Alunos.exe").Length / 1MB, 2)
+            Write-Host "OK: CRM-Alunos.exe ($size MB)"
+          } else {
+            Write-Error "CRM-Alunos.exe not found"
+            exit 1
+          }
+
+      - name: Zip Windows build
+        run: Compress-Archive -Path publish-win/* -DestinationPath CRM-Alunos-Windows.zip
+        shell: pwsh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: CRM-Alunos-Windows.zip
+
+  build-linux:
+    name: Build Blazor Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8.0
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Publish Blazor
+        run: dotnet publish CRM-Alunos.Web/CRM-Alunos.Web.csproj -c Release -o publish-web
+
+      - name: Verify
+        run: |
+          if [ -f "publish-web/CRM-Alunos.Web.dll" ]; then
+            echo "OK: CRM-Alunos.Web.dll"
+          else
+            echo "FAIL: DLL not found"
+            exit 1
+          fi
+
+      - name: Zip Linux build
+        run: cd publish-web && zip -r $GITHUB_WORKSPACE/CRM-Alunos-Linux.zip .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: CRM-Alunos-Linux.zip
+
+  release:
+    name: Create Release
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-build
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-build
+
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v1.0.$(date +%Y%m%d-%H%M%S)"
+          gh release create "$TAG" \
+            --title "CRM Alunos $TAG" \
+            --notes "## CRM Alunos
+
+          ### Downloads
+          - **Windows**: CRM-Alunos-Windows.zip — Executável standalone (não precisa de .NET instalado)
+          - **Linux/Web**: CRM-Alunos-Linux.zip — Blazor Web App (requer .NET 8 runtime)
+
+          ### Como usar
+          **Windows**: Extraia o zip e execute \`CRM-Alunos.exe\`
+          **Linux**: Extraia e execute \`dotnet CRM-Alunos.Web.dll\` na pasta, depois acesse http://localhost:5000" \
+            CRM-Alunos-Windows.zip \
+            CRM-Alunos-Linux.zip
